@@ -61,6 +61,8 @@ export default function TabLayout() {
       <Tabs.Screen
         name="calories"
         options={{
+        }
+        }
     </Tabs>
   );
 }
