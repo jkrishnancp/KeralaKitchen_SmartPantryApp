@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { Calendar, Plus, Clock, Users, ChefHat } from 'lucide-react-native';
 
@@ -74,28 +75,7 @@ export default function WeeklyPlanScreen() {
     </ScrollView>
   );
 
-  const renderMealSlot = (mealType: any) => {
-    const meal = plannedMeals[selectedDay]?.[mealType.key];
-    
-    return (
-      <View key={mealType.key} style={styles.mealSlot}>
-        <View style={styles.mealHeader}>
-          <View style={styles.mealTypeInfo}>
-            <Text style={styles.mealIcon}>{mealType.icon}</Text>
-            <Text style={styles.mealLabel}>{mealType.label}</Text>
-          </View>
-          
-          <TouchableOpacity style={styles.addMealButton}>
-            <Plus size={20} color="#16a34a" />
-          </TouchableOpacity>
-        </View>
-        
-        {meal ? (
-          <View style={styles.plannedMeal}>
-            <Text style={styles.mealName}>{meal.name}</Text>
-            <View style={styles.mealDetails}>
-              <View style={styles.mealDetail}>
-                <Clock size={14} color="#6b7280" />
+  const handleAddMeal = () => {
     Alert.alert(
       'Add Meal',
       'Choose how to add a meal to your plan:',
@@ -121,6 +101,48 @@ export default function WeeklyPlanScreen() {
           }
         }
       ]
+    );
+  };
+
+  const renderMealSlot = (mealType: any) => {
+    const meal = plannedMeals[selectedDay]?.[mealType.key];
+    
+    return (
+      <View key={mealType.key} style={styles.mealSlot}>
+        <View style={styles.mealHeader}>
+          <View style={styles.mealTypeInfo}>
+            <Text style={styles.mealIcon}>{mealType.icon}</Text>
+            <Text style={styles.mealLabel}>{mealType.label}</Text>
+          </View>
+          
+          <TouchableOpacity style={styles.addMealButton} onPress={handleAddMeal}>
+            <Plus size={20} color="#16a34a" />
+          </TouchableOpacity>
+        </View>
+        
+        {meal ? (
+          <View style={styles.plannedMeal}>
+            <Text style={styles.mealName}>{meal.name}</Text>
+            <View style={styles.mealDetails}>
+              <View style={styles.mealDetail}>
+                <Clock size={14} color="#6b7280" />
+                <Text style={styles.mealDetailText}>{meal.time} min</Text>
+              </View>
+              <View style={styles.mealDetail}>
+                <Users size={14} color="#6b7280" />
+                <Text style={styles.mealDetailText}>{meal.servings} servings</Text>
+              </View>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.emptyMeal}>
+            <Text style={styles.emptyMealText}>No meal planned</Text>
+            <TouchableOpacity style={styles.planMealButton} onPress={handleAddMeal}>
+              <Text style={styles.planMealButtonText}>Plan a meal</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
     );
   };
 
