@@ -9,7 +9,7 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
-import { ChefHat, Clock, Users, Lightbulb, ShoppingCart, Heart, Plus, Settings } from 'lucide-react-native';
+import { ChefHat, Clock, Users, Lightbulb, ShoppingCart, Heart, Plus, Settings, Filter, Calendar } from 'lucide-react-native';
 import { Recipe, FoodItem, RecipeMatchResult } from '@/types/database';
 import { databaseService } from '@/services/database';
 import { RecipeMatchingService } from '@/services/recipeMatchingService';
@@ -26,14 +26,35 @@ export default function CookScreen() {
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | null>(null);
   const [pairingSuggestions, setPairingSuggestions] = useState<PairingSuggestion[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedTimeFilter, setSelectedTimeFilter] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(false);
 
   const matchingService = new RecipeMatchingService();
   const pairingService = new RecipePairingService();
 
+  const timeFilters = [
+    { key: 'all', label: 'All Time', maxMinutes: null },
+    { key: 'quick', label: 'Under 30 min', maxMinutes: 30 },
+    { key: 'medium', label: '30-60 min', maxMinutes: 60 },
+    { key: 'long', label: '60+ min', maxMinutes: null },
+  ];
+
+  const getCurrentDate = () => {
+    const today = new Date();
+    return today.toLocaleDateString('en-IN', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
   useEffect(() => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    applyFilters();
+  }, [selectedTimeFilter, recipes, inventory]);
   const loadData = async () => {
     try {
       setLoading(true);
@@ -44,21 +65,40 @@ export default function CookScreen() {
 
       setRecipes(allRecipes);
       setInventory(inventoryItems);
-
-      const matches = matchingService.matchRecipesToInventory(allRecipes, inventoryItems);
-      
-      const cookNow = matchingService.getCookNowRecipes(matches);
-      const nearMatch = matchingService.getNearMatchRecipes(matches);
-
-      setCookNowRecipes(cookNow);
-      setNearMatchRecipes(nearMatch);
-
     } catch (error) {
       console.error('Error loading cook data:', error);
       Alert.alert('Error', 'Failed to load cooking suggestions');
     } finally {
       setLoading(false);
     }
+  };
+
+  const applyFilters = () => {
+    let filteredRecipes = recipes;
+    
+    // Apply time filter
+    if (selectedTimeFilter !== 'all') {
+      const filter = timeFilters.find(f => f.key === selectedTimeFilter);
+      if (filter) {
+        if (filter.key === 'long') {
+          filteredRecipes = filteredRecipes.filter(r => 
+            (r.prepMinutes + r.cookMinutes) > 60
+          );
+        } else if (filter.maxMinutes) {
+          filteredRecipes = filteredRecipes.filter(r => 
+            (r.prepMinutes + r.cookMinutes) <= filter.maxMinutes
+          );
+        }
+      }
+    }
+
+    const matches = matchingService.matchRecipesToInventory(filteredRecipes, inventory);
+      
+      const cookNow = matchingService.getCookNowRecipes(matches);
+      const nearMatch = matchingService.getNearMatchRecipes(matches);
+
+      setCookNowRecipes(cookNow);
+      setNearMatchRecipes(nearMatch);
   };
 
   const handleRecipeSelect = (recipe: Recipe) => {
@@ -224,12 +264,20 @@ export default function CookScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>What to Cook?</Text>
-          <Text style={styles.headerSubtitle}>
-            Based on your pantry ({inventory.length} items)
-          </Text>
+          <View style={styles.headerInfo}>
+            <Calendar size={16} color="#6b7280" />
+            <Text style={styles.headerDate}>{getCurrentDate()}</Text>
+          </View>
         </View>
         
         <View style={styles.headerActions}>
+          <TouchableOpacity 
+            style={styles.headerButton} 
+            onPress={() => setShowFilters(!showFilters)}
+          >
+            <Filter size={20} color="#6b7280" />
+          </TouchableOpacity>
+          
           <TouchableOpacity style={styles.headerButton} onPress={navigateToSaved}>
             <Heart size={20} color="#16a34a" />
           </TouchableOpacity>
@@ -239,6 +287,36 @@ export default function CookScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Filters */}
+      {showFilters && (
+        <View style={styles.filtersContainer}>
+          <Text style={styles.filtersTitle}>Cook Time</Text>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filtersScroll}
+          >
+            {timeFilters.map((filter) => (
+              <TouchableOpacity
+                key={filter.key}
+                style={[
+                  styles.filterChip,
+                  selectedTimeFilter === filter.key && styles.activeFilterChip
+                ]}
+                onPress={() => setSelectedTimeFilter(filter.key)}
+              >
+                <Text style={[
+                  styles.filterChipText,
+                  selectedTimeFilter === filter.key && styles.activeFilterChipText
+                ]}>
+                  {filter.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      )}
 
       <ScrollView
         style={styles.scrollView}
@@ -307,15 +385,6 @@ export default function CookScreen() {
           >
             <Text style={styles.actionButtonText}>+ Add Recipe</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={[styles.actionButton, styles.secondaryButton]}
-            onPress={() => router.push('/(tabs)/inventory')}
-          >
-            <Text style={[styles.actionButtonText, styles.secondaryButtonText]}>
-              Manage Pantry
-            </Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -351,9 +420,14 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 4,
   },
-  headerSubtitle: {
+  headerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerDate: {
     fontSize: 16,
     color: '#6b7280',
+    marginLeft: 6,
   },
   headerActions: {
     flexDirection: 'row',
@@ -363,6 +437,40 @@ const styles = StyleSheet.create({
     padding: 8,
     borderRadius: 8,
     backgroundColor: '#f3f4f6',
+  },
+  filtersContainer: {
+    backgroundColor: '#ffffff',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f4f6',
+  },
+  filtersTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 8,
+    paddingHorizontal: 20,
+  },
+  filtersScroll: {
+    paddingHorizontal: 20,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 12,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 20,
+  },
+  activeFilterChip: {
+    backgroundColor: '#16a34a',
+  },
+  filterChipText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+  activeFilterChipText: {
+    color: '#ffffff',
   },
   scrollView: {
     flex: 1,
@@ -544,9 +652,10 @@ const styles = StyleSheet.create({
   quickActions: {
     flexDirection: 'row',
     gap: 12,
+    justifyContent: 'center',
   },
   actionButton: {
-    flex: 1,
+    paddingHorizontal: 32,
     backgroundColor: '#16a34a',
     paddingVertical: 16,
     borderRadius: 12,

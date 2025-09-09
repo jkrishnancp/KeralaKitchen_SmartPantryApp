@@ -10,10 +10,10 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
-import { Search, Plus, Trash2, CreditCard as Edit3, Package2, TriangleAlert as AlertTriangle } from 'lucide-react-native';
+import { Search, Plus, Trash2, CreditCard as Edit3, Package2, TriangleAlert as AlertTriangle, Upload } from 'lucide-react-native';
 import { FoodItem } from '@/types/database';
 import { databaseService } from '@/services/database';
-import { format, isAfter, parseISO } from 'date-fns';
+import { importService } from '@/services/importService';
 
 export default function InventoryScreen() {
   const [inventory, setInventory] = useState<FoodItem[]>([]);
@@ -95,6 +95,27 @@ export default function InventoryScreen() {
     );
   };
 
+  const handleImportInventory = async () => {
+    Alert.alert(
+      'Import Inventory',
+      'Choose import method:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Excel File', 
+          onPress: async () => {
+            try {
+              // TODO: Implement inventory Excel import
+              Alert.alert('Coming Soon', 'Excel import for inventory will be available soon.');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to import inventory');
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const editItem = (item: FoodItem) => {
     Alert.prompt(
       'Edit Quantity',
@@ -152,11 +173,6 @@ export default function InventoryScreen() {
     }
   };
 
-  const isExpired = (item: FoodItem): boolean => {
-    // Removed date functionality from pantry
-    return false;
-  };
-
   const getItemStatusColor = (item: FoodItem): string => {
     if ((item.quantity || 0) <= 1) return '#f59e0b';
     return '#6b7280';
@@ -169,36 +185,29 @@ export default function InventoryScreen() {
     return (
       <TouchableOpacity
         key={item.id}
-        style={[
-          styles.inventoryItem,
-          showWarning && styles.warningItem
-        ]}
+        style={styles.inventoryItem}
         onPress={() => editItem(item)}
       >
-        <View style={styles.itemInfo}>
-          <View style={styles.itemHeader}>
-            <Text style={styles.itemName}>{item.name}</Text>
-            {showWarning && (
-              <AlertTriangle size={16} color={statusColor} />
-            )}
-          </View>
-          
-          <View style={styles.itemDetails}>
-            <Text style={[styles.itemCategory, { color: statusColor }]}>
-              {item.category}
-            </Text>
-            
-            {item.quantity !== undefined && (
-              <Text style={styles.itemQuantity}>
-                {item.quantity} {item.unit || 'pcs'}
-              </Text>
-            )}
-          </View>
-          
-          {(item.quantity || 0) <= 1 && (
-            <Text style={styles.lowStockText}>Low stock</Text>
+        <View style={styles.itemHeader}>
+          <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
+          {showWarning && (
+            <AlertTriangle size={14} color={statusColor} />
           )}
         </View>
+        
+        <Text style={[styles.itemCategory, { color: statusColor }]}>
+          {item.category}
+        </Text>
+        
+        {item.quantity !== undefined && (
+          <Text style={styles.itemQuantity}>
+            {item.quantity} {item.unit || 'pcs'}
+          </Text>
+        )}
+        
+        {(item.quantity || 0) <= 1 && (
+          <Text style={styles.lowStockText}>Low stock</Text>
+        )}
 
         <View style={styles.itemActions}>
           <TouchableOpacity
@@ -253,6 +262,10 @@ export default function InventoryScreen() {
         
         <TouchableOpacity style={styles.addButton} onPress={addNewItem}>
           <Plus size={20} color="#16a34a" />
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.importButton} onPress={handleImportInventory}>
+          <Upload size={20} color="#16a34a" />
         </TouchableOpacity>
       </View>
 
@@ -375,6 +388,10 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     padding: 4,
   },
+  importButton: {
+    marginLeft: 8,
+    padding: 4,
+  },
   categoriesContainer: {
     marginBottom: 20,
   },
@@ -406,10 +423,12 @@ const styles = StyleSheet.create({
   inventoryList: {
     paddingHorizontal: 20,
     paddingBottom: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
   },
   inventoryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    width: '48%',
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
@@ -420,58 +439,43 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  warningItem: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#f59e0b',
-  },
-  itemInfo: {
-    flex: 1,
-  },
   itemHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 4,
   },
   itemName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#111827',
     flex: 1,
-  },
-  itemDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
   },
   itemCategory: {
     fontSize: 12,
     fontWeight: '500',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginRight: 12,
+    marginBottom: 4,
   },
   itemQuantity: {
     fontSize: 14,
     color: '#374151',
     fontWeight: '500',
-  },
-  expiryDate: {
-    fontSize: 12,
-    marginTop: 4,
+    marginBottom: 4,
   },
   lowStockText: {
     fontSize: 12,
     color: '#f59e0b',
     fontWeight: '600',
-    marginTop: 4,
+    marginBottom: 8,
   },
   itemActions: {
     flexDirection: 'row',
-    marginLeft: 16,
+    justifyContent: 'space-between',
   },
   actionButton: {
-    padding: 8,
-    marginLeft: 8,
+    padding: 4,
   },
   emptyState: {
     flex: 1,

@@ -61,12 +61,6 @@ export default function TabLayout() {
       <Tabs.Screen
         name="calories"
         options={{
-          title: 'Calories',
-          tabBarIcon: ({ size, color }) => (
-            <TrendingUp size={size} color={color} />
-          ),
-        }}
-      />
     </Tabs>
   );
 }

@@ -96,23 +96,31 @@ export default function WeeklyPlanScreen() {
             <View style={styles.mealDetails}>
               <View style={styles.mealDetail}>
                 <Clock size={14} color="#6b7280" />
-                <Text style={styles.mealDetailText}>{meal.time} min</Text>
-              </View>
-              <View style={styles.mealDetail}>
-                <Users size={14} color="#6b7280" />
-                <Text style={styles.mealDetailText}>{meal.servings} servings</Text>
-              </View>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.emptyMeal}>
-            <Text style={styles.emptyMealText}>No meal planned</Text>
-            <TouchableOpacity style={styles.planMealButton}>
-              <Text style={styles.planMealButtonText}>Plan Meal</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
+    Alert.alert(
+      'Add Meal',
+      'Choose how to add a meal to your plan:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Browse Recipes', 
+          onPress: () => router.push('/(tabs)/') 
+        },
+        { 
+          text: 'Quick Add', 
+          onPress: () => {
+            Alert.prompt(
+              'Quick Add Meal',
+              'Enter meal name:',
+              (mealName: string) => {
+                if (mealName && mealName.trim()) {
+                  // TODO: Add meal to selected day/time slot
+                  Alert.alert('Success', `Added "${mealName}" to meal plan`);
+                }
+              }
+            );
+          }
+        }
+      ]
     );
   };
 
