@@ -66,7 +66,7 @@ A comprehensive React Native app for exploring Kerala cuisine and managing your 
 
 1. **Clone and Install**
    ```bash
-   git clone <repo-url>
+   git clone https://github.com/jkrishnancp/KeralaKitchen_SmartPantryApp
    cd kerala-kitchen-app
    npm install
    ```
